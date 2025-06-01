@@ -1,0 +1,31 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: onboarding-api-v2
+  namespace: mobile-apps
+  labels:
+    app: onboarding-api-v2
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    helm.sh/chart: am-chart-0.1.0
+    meta.helm.sh/release-name: onboarding-api-v2
+    meta.helm.sh/release-namespace: mobile-apps
+spec:
+  clusterIP: 10.137.126.57
+  ipFamilies:
+    - IPv4
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+  internalTrafficPolicy: Cluster
+  clusterIPs:
+    - 10.137.126.57
+  type: ClusterIP
+  ipFamilyPolicy: SingleStack
+  sessionAffinity: None
+  selector:
+    app: onboarding-api-v2
+status:
+  loadBalancer: {}

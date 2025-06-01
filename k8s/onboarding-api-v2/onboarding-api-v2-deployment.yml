@@ -1,0 +1,200 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: onboarding-api-v2
+  generation: 886
+      subresource: status
+  namespace: mobile-apps
+  labels:
+    app: onboarding-api-v2
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: onboarding-api-v2
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: onboarding-api-v2
+        app.kubernetes.io/instance: onboarding-api-v2
+        pod-template-hash: 7bc789568b
+        version: 2.0.104
+      annotations:
+        sidecar.istio.io/bootstrapOverride: envoy-custom-bootstrap-config
+        sidecar.istio.io/proxyMemoryLimit: 256Mi
+        prometheus.io/port: '8080'
+        prometheus.io/path: /actuator/prometheus
+        sidecar.istio.io/proxyCPU: 400m
+        sidecar.istio.io/proxyMemory: 256Mi
+        prometheus.io/scrape: 'true'
+        logCollectorSystemLabel: mobile
+    spec:
+      restartPolicy: Always
+      serviceAccountName: default
+      schedulerName: default-scheduler
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/app
+                    operator: Exists
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - onboarding-api-v2
+                topologyKey: datacenter
+      terminationGracePeriodSeconds: 30
+      dnsConfig:
+        options:
+          - name: ndots
+            value: '2'
+      securityContext:
+        runAsUser: 100000
+        runAsGroup: 200000
+        fsGroup: 300000
+      containers:
+        - resources:
+            limits:
+              memory: 1536Mi
+            requests:
+              cpu: 600m
+              memory: 1536Mi
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+              scheme: HTTP
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - '-c'
+                  - sleep 5
+          name: onboarding-api-v2
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+              scheme: HTTP
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: JAVA_TOOL_OPTIONS
+              value: >-
+                -Xms768m -Xmx768m  -Duser.timezone=Europe/Moscow -Duser.country=
+                -Duser.language=en -XX:+AlwaysActAsServerClassMachine 
+                -Djavax.net.ssl.trustStore=/var/run/secrets/java.io/cacerts  
+                -Dserver.port=8080
+            - name: APP
+              value: onboarding-api-v2
+            - name: CONTAINER_NAME
+              value: onboarding-api-v2
+            - name: CONFIG_BRANCH
+              value: 17dc4482837173be2ce2fa41d2ba0c3e26e270a8
+            - name: CONFIG_SERV
+              value: config-server
+            - name: SPRING_PROFILES_ACTIVE
+              value: 'zipkin-kafka,prod,cloud,logstash,kube'
+            - name: LOGGING_PROFILE
+              value: STAGE
+            - name: LOGGING_CONFIG
+              value: /var/run/logback-spring-kube-2.0.15.xml
+            - name: spring.reactor.debug-agent.enabled
+              value: 'true'
+            - name: spring.cloud.config.discovery.enabled
+              value: 'false'
+            - name: spring.cloud.config.uri
+              value: 'http://config-server.mobile-apps'
+            - name: eureka.client.enabled
+              value: 'false'
+            - name: spring.zipkin.enabled
+              value: 'false'
+            - name: kube.enabled
+              value: 'true'
+            - name: MAX_MSG_LENGTH
+              value: '[:]'
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+          imagePullPolicy: IfNotPresent
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+              scheme: HTTP
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 30
+          volumeMounts:
+            - name: custom-bootstrap-volume
+              mountPath: /etc/istio/custom-bootstrap
+            - name: logback
+              mountPath: /var/run
+            - name: cacerts
+              mountPath: /var/run/secrets/java.io
+            - name: tmpfs
+              mountPath: /tmp
+          terminationMessagePolicy: File
+          image: 'eco.binary.bank.ru/onboarding-api-v2:2.0.104'
+      serviceAccount: default
+      volumes:
+        - name: logback
+          configMap:
+            name: logback-config-2.0.15
+            defaultMode: 420
+        - name: custom-bootstrap-volume
+          configMap:
+            name: envoy-custom-bootstrap-config
+            defaultMode: 420
+        - name: cacerts
+          secret:
+            secretName: cacerts
+            defaultMode: 420
+        - name: tmpfs
+          emptyDir: {}
+      dnsPolicy: ClusterFirst
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+

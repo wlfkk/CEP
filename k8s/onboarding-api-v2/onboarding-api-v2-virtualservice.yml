@@ -1,0 +1,20 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  annotations:
+    helm.sh/chart: am-chart-0.1.0
+    meta.helm.sh/release-name: onboarding-api-v2
+    meta.helm.sh/release-namespace: mobile-apps
+  name: onboarding-api-v2
+  generation: 3
+  namespace: mobile-apps
+  labels:
+    app.kubernetes.io/managed-by: Helm
+spec:
+  hosts:
+    - onboarding-api-v2.mobile-apps.svc.cluster.local
+  http:
+    - route:
+        - destination:
+            host: onboarding-api-v2.mobile-apps.svc.cluster.local
+            subset: default

@@ -1,0 +1,31 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: api-gateway-external
+  namespace: mobile-apps
+  labels:
+    app: api-gateway-external
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    helm.sh/chart: am-chart-0.1.0
+    meta.helm.sh/release-name: api-gateway-external
+    meta.helm.sh/release-namespace: mobile-apps
+spec:
+  clusterIP: 10.137.89.127
+  ipFamilies:
+    - IPv4
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+  internalTrafficPolicy: Cluster
+  clusterIPs:
+    - 10.137.89.127
+  type: ClusterIP
+  ipFamilyPolicy: SingleStack
+  sessionAffinity: None
+  selector:
+    app: api-gateway-external
+status:
+  loadBalancer: {}

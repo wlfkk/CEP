@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  annotations:
+    helm.sh/chart: am-chart-0.1.0
+    meta.helm.sh/release-name: api-gateway-external
+    meta.helm.sh/release-namespace: mobile-apps
+  name: api-gateway-external
+  generation: 1
+  namespace: mobile-apps
+  labels:
+    app.kubernetes.io/managed-by: Helm
+spec:
+  host: api-gateway-external.mobile-apps.svc.cluster.local
+  subsets:
+    - labels:
+        app.kubernetes.io/instance: api-gateway-external
+      name: default
+  trafficPolicy:
+    loadBalancer:
+      warmupDurationSecs: 30s

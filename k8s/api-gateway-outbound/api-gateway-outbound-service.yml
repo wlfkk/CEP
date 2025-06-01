@@ -1,0 +1,26 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: api-gateway-outbound
+  namespace: mobile-apps
+  labels:
+    app: api-gateway-outbound
+spec:
+  clusterIP: 10.137.84.222
+  ipFamilies:
+    - IPv4
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+  internalTrafficPolicy: Cluster
+  clusterIPs:
+    - 10.137.84.222
+  type: ClusterIP
+  ipFamilyPolicy: SingleStack
+  sessionAffinity: None
+  selector:
+    app: api-gateway-outbound
+status:
+  loadBalancer: {}

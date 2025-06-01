@@ -1,0 +1,18 @@
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  annotations:
+    helm.sh/chart: am-chart-0.1.0
+    meta.helm.sh/release-name: customer-insight-api
+    meta.helm.sh/release-namespace: mobile-apps
+  name: customer-insight-api
+  generation: 1
+  namespace: mobile-apps
+  labels:
+    app.kubernetes.io/managed-by: Helm
+spec:
+  host: customer-insight-api.mobile-apps.svc.cluster.local
+  subsets:
+    - labels:
+        app.kubernetes.io/instance: customer-insight-api
+      name: default

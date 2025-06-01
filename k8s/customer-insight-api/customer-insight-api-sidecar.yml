@@ -1,0 +1,38 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  annotations:
+    helm.sh/chart: am-chart-0.1.0
+    meta.helm.sh/release-name: customer-insight-api
+    meta.helm.sh/release-namespace: mobile-apps
+  name: customer-insight-api
+  generation: 1
+  namespace: mobile-apps
+  labels:
+    app.kubernetes.io/managed-by: Helm
+spec:
+  egress:
+    - hosts:
+        - mobile-apps/spring-boot-admin-ui.mobile-apps.svc.cluster.local
+        - mobile-apps/config-server.mobile-apps.svc.cluster.local
+      port:
+        name: http
+        number: 80
+        protocol: HTTP
+    - hosts:
+        - istio-system/metrics.abank.ru
+        - istio-system/corp-gateway-prod.moscow.intra.net
+      port:
+        name: https
+        number: 443
+        protocol: HTTPS
+    - hosts:
+        - >-
+          istio-system/istio-internal-egressgateway.istio-system.svc.cluster.local
+        - >-
+          istio-system/istio-external-egressgateway.istio-system.svc.cluster.local
+        - istio-system/istiod.istio-system.svc.cluster.local
+        - default/kubernetes.default.svc.cluster.local
+  workloadSelector:
+    labels:
+      app: customer-insight-api

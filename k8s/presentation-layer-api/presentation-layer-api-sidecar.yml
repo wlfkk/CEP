@@ -1,0 +1,32 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  generation: 2
+  name: presentation-layer-api
+  namespace: mobile-apps
+spec:
+  egress:
+    - hosts:
+        - mobile-apps/spring-boot-admin-ui.mobile-apps.svc.cluster.local
+        - istio-system/esbwsreco.moscow.intra.net
+        - mobile-apps/config-server.mobile-apps.svc.cluster.local
+      port:
+        name: http
+        number: 80
+        protocol: HTTP
+    - hosts:
+        - istio-system/metrics.bank.ru
+      port:
+        name: https
+        number: 443
+        protocol: HTTPS
+    - hosts:
+        - >-
+          istio-system/istio-internal-egressgateway.istio-system.svc.cluster.local
+        - >-
+          istio-system/istio-external-egressgateway.istio-system.svc.cluster.local
+        - istio-system/istiod.istio-system.svc.cluster.local
+        - default/kubernetes.default.svc.cluster.local
+  workloadSelector:
+    labels:
+      app: presentation-layer-api

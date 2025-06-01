@@ -1,0 +1,37 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  annotations:
+    helm.sh/chart: am-chart-0.1.0
+    meta.helm.sh/release-name: api-gateway-external
+    meta.helm.sh/release-namespace: mobile-apps
+  name: api-gateway-external
+  generation: 7
+  namespace: mobile-apps
+  labels:
+    app.kubernetes.io/managed-by: Helm
+spec:
+  egress:
+    - hosts:
+        - mobile-apps/*.mobile-apps.svc.cluster.local
+        - mobile-apps/config-server.mobile-apps.svc.cluster.local
+      port:
+        name: http
+        number: 80
+        protocol: HTTP
+    - hosts:
+        - istio-system/mobile.moscow.intra.net
+      port:
+        name: https
+        number: 443
+        protocol: HTTPS
+    - hosts:
+        - >-
+          istio-system/istio-internal-egressgateway.istio-system.svc.cluster.local
+        - >-
+          istio-system/istio-external-egressgateway.istio-system.svc.cluster.local
+        - istio-system/istiod.istio-system.svc.cluster.local
+        - default/kubernetes.default.svc.cluster.local
+  workloadSelector:
+    labels:
+      app: api-gateway-external

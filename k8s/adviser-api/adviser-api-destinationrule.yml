@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  annotations:
+    helm.sh/chart: am-chart-0.1.0
+    meta.helm.sh/release-name: adviser-api
+    meta.helm.sh/release-namespace: mobile-apps
+  name: adviser-api
+  generation: 2
+  namespace: mobile-apps
+  labels:
+    app.kubernetes.io/managed-by: Helm
+spec:
+  host: adviser-api.mobile-apps.svc.cluster.local
+  subsets:
+    - labels:
+        app.kubernetes.io/instance: adviser-api
+      name: default
+  trafficPolicy:
+    loadBalancer:
+      warmupDurationSecs: 30s

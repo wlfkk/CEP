@@ -1,0 +1,26 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: presentation-layer-api
+  namespace: mobile-apps
+  labels:
+    app: presentation-layer-api
+spec:
+  clusterIP: 10.137.81.160
+  ipFamilies:
+    - IPv4
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+  internalTrafficPolicy: Cluster
+  clusterIPs:
+    - 10.137.81.160
+  type: ClusterIP
+  ipFamilyPolicy: SingleStack
+  sessionAffinity: None
+  selector:
+    app: presentation-layer-api
+status:
+  loadBalancer: {}

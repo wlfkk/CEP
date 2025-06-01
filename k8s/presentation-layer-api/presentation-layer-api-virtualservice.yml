@@ -1,0 +1,14 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  generation: 3
+  name: presentation-layer-api
+  namespace: mobile-apps
+spec:
+  hosts:
+    - presentation-layer-api.mobile-apps.svc.cluster.local
+  http:
+    - route:
+        - destination:
+            host: presentation-layer-api.mobile-apps.svc.cluster.local
+            subset: default

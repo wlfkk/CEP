@@ -1,0 +1,26 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  generation: 15
+  name: api-gateway-outbound
+  namespace: mobile-apps
+spec:
+  egress:
+    - hosts:
+        - istio-system/corp-gateway-prod.moscow.intra.net
+        - mobile-apps/spring-boot-admin-ui.mobile-apps.svc.cluster.local
+        - mobile-apps/config-server.mobile-apps.svc.cluster.local
+      port:
+        name: http
+        number: 80
+        protocol: HTTP
+    - hosts:
+        - >-
+          istio-system/istio-internal-egressgateway.istio-system.svc.cluster.local
+        - >-
+          istio-system/istio-external-egressgateway.istio-system.svc.cluster.local
+        - istio-system/istiod.istio-system.svc.cluster.local
+        - default/kubernetes.default.svc.cluster.local
+  workloadSelector:
+    labels:
+      app: api-gateway-outbound
