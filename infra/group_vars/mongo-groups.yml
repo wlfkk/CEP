@@ -1,0 +1,6 @@
+# --------
+# Inframon
+# --------
+inframon_include_mongo             : true
+inframon_include_ops_agent         : true
+mongo_backup_user_name      : backupAndRestoreUser

@@ -1,0 +1,90 @@
+- name: Install OpenSSL
+  yum:
+    name: openssl
+    state: present
+  when: run_redis | default(false)
+
+- name: List service vars files
+  find:
+    paths: "../vars/{{ profile }}/redis"
+    patterns: "*.yml"
+  delegate_to: localhost
+  become: no
+  register: service_files
+  run_once: true
+  when: test_redis | default(false) or run_redis | default(false) or switch_master | default(false)
+
+- name: Initialize filtered service list
+  set_fact:
+    filtered_service_list: []
+  run_once: true
+  when: test_redis | default(false) or switch_master | default(false) or run_redis | default(false)
+
+- name: Read and filter services based on redis_group_name
+  set_fact:
+    filtered_service_list: "{{ filtered_service_list + [item.path | basename | regex_replace('\\.yml$', '')] }}"
+  when:
+    - (content | from_yaml).redis_group_name is defined
+    - (content | from_yaml).redis_group_name == deploy_group_name
+    - switch_master | default(false) or test_redis | default(false) or run_redis | default(false)
+  loop: "{{ service_files.files }}"
+  loop_control:
+    loop_var: item
+  delegate_to: localhost
+  become: no
+  run_once: true
+  vars:
+    content: "{{ lookup('file', item.path) }}"
+
+- name: Split services into a list if provided
+  set_fact:
+    filtered_service_list: "{{ services.split(',') }}"
+  when:
+    - services is defined
+    - run_redis | default(false) or switch_master | default(false) or test_redis | default(false)
+  run_once: true
+
+- name: Debug filtered service list
+  debug:
+    var: filtered_service_list
+  run_once: true
+  when: test_redis | default(false) or switch_master | default(false) or run_redis | default(false)
+
+- name: Run each Redis service
+  include_tasks: tasks-process-redis-service.yml
+  loop: "{{ filtered_service_list }}"
+  loop_control:
+    loop_var: service_name
+  when: run_redis | default(false)
+
+- name: Initialize success and failure lists
+  set_fact:
+    successful_services: []
+    failed_services: []
+  when: switch_master | default(false) or test_redis | default(false)
+
+- name: Test each Redis service
+  include_tasks: tasks-process-redis-service.yml
+  loop: "{{ filtered_service_list }}"
+  loop_control:
+    loop_var: service_name
+  when: test_redis | default(false)
+
+- name: Switch each Redis master
+  include_tasks: tasks-switch-redis-master-sentinel.yml
+  loop: "{{ filtered_service_list }}"
+  loop_control:
+    loop_var: service_name
+  when: switch_master | default(false)
+
+- name: Output successful switched services
+  run_once: true
+  debug:
+    msg: "The following services successfully switched master: {{ successful_services }}"
+  when: switch_master | default(false) or test_redis | default(false)
+
+- name: Output failed switched services
+  run_once: true
+  debug:
+    msg: "The following services failed to switch master: {{ failed_services }}"
+  when: switch_master | default(false) or test_redis | default(false)

@@ -1,0 +1,20 @@
+---
+
+
+- become: yes
+  hosts: redis-groups
+  ignore_errors: "{{ deploy_all_static | default(false) }}"
+  vars_files:
+    - "../vars/{{ profile }}/redis/{{ service_name }}.yml"
+  tasks:
+    - name: Check vault
+      block:
+        - name: Include vars
+          include_vars: "../vars/{{ profile }}/redis/vault/{{ service_name }}.yml"
+      rescue:
+        - set_fact:
+            decrypt_redis_vault_failed: true
+    - name: Execute role
+      import_role:
+        name: redis
+      when: decrypt_redis_vault_failed is not defined and inventory_hostname in groups[redis_group_name]

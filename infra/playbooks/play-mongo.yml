@@ -1,0 +1,71 @@
+
+- hosts: "mongo-reps-{{ service_name }}"
+  become: yes
+  become_user: root
+  become_method: sudo
+  gather_facts: false
+  tasks:
+    - name: Check hosts connection
+      block:
+        - name: Ping hosts
+          check_mode: false
+          wait_for_connection:
+            timeout: 30
+          vars:
+            ansible_connection: ssh
+      rescue:
+        - debug: msg="cannot connect to {{inventory_hostname}}"
+        - set_fact:
+            connection_check_failed: true
+
+    - name: Check vault
+      block:
+        - name: Include vars
+          include_vars: "{{ item }}"
+          with_items:
+            - "../vars/{{ profile }}/{{ profile }}.yml"
+            - "../vars/{{ profile }}/mongo/{{ service_name }}.yml"
+
+        - name: Include vault vars
+          include_vars: "../vars/{{ profile }}/mongo/vault/{{ service_name }}.yml"
+          when: service_name not in mongo_without_auth
+      rescue:
+        - set_fact:
+            decrypt_mongo_vault_failed: true
+      tags:
+        - always
+
+    - name: Gathering tasks
+      setup:
+        gather_subset:
+          - all
+      when: connection_check_failed is not defined
+
+    - name: Execute role
+      import_role:
+        name: mongo
+      ignore_errors: "{{ deploy_all_static | default(false) }}"
+      when: decrypt_mongo_vault_failed is not defined and connection_check_failed is not defined and service_name not in mongo_retail
+
+    - name: Execute role mongo-retail
+      import_role:
+        name: mongo-retail
+      ignore_errors: "{{ deploy_all_static | default(false) }}"
+      when: decrypt_mongo_vault_failed is not defined and connection_check_failed is not defined and service_name in mongo_retail
+
+- name: Deploy dbGate UI
+  hosts: mongo-ui
+  become: yes
+  gather_facts: false
+
+  tasks:
+    - name: Include dbgate role if conditions are met on integration
+      include_role:
+        name: dbgate
+      when:
+        - profile is defined
+        - profile == "integration"
+        - service_name is defined
+        - service_name not in mongo_retail
+        - decrypt_mongo_vault_failed is not defined
+        - connection_check_failed is not defined

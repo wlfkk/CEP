@@ -1,0 +1,7 @@
+redis_service_postfix     : api-onboarding-v2
+redis_container_memory_mb : 4096
+redis_cache_memory_mb     : 4096
+redis_port                : 6669
+redis_sentinel_port       : 6670
+redis_password            : "{{ redis_api_onboarding_v2_password }}"
+redis_group_name          : "amcache-9"

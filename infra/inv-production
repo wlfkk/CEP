@@ -1,0 +1,82 @@
+[redis-groups:children]
+amcache-3
+amcache-9
+
+[amcache-3]
+amcache3 repl_mode=replica
+amcache3r repl_mode=master
+amcache3n repl_mode=replica
+
+[amcache-9]
+amcache9 repl_mode=master
+amcache9r repl_mode=replica
+amcache9n repl_mode=replica
+
+[mongo-reps-customer-insight]
+recomdb3
+recomdbn3
+recomdbr3
+recomdb4
+recomdbr4 mode=backup
+recomdbn4
+recomdb5
+recomdbr5
+recomdbn5
+
+
+
+
+[mongo-groups:children]
+mongo-reps-customer-insight
+
+
+# -------
+# Postgres Stolon Cluster
+# -------
+[etcd:children]
+etcd-mobile
+etcd-customer-insight
+
+[etcd-mobile]
+amdb
+amdbr
+amdbn
+
+[etcd-customer-insight]
+recomdb2
+recomdbn2
+recomdbr2
+
+[stolon:children]
+stolon-mobile
+stolon-customer-insight
+
+[stolon-mobile]
+amdb
+amdbr
+amdbn
+
+[stolon-customer-insight]
+recomdb2
+recomdbn2
+recomdbr2
+
+
+[all:vars]
+redis_run_tests         = false
+redis_run_flush_tests   = false
+redis_services_min_port = 6500
+redis_services_max_port = 7000
+
+[minio]
+amdata
+amdatar
+amdatan
+
+[keycloak]
+amapp1
+amapp2
+amappr1
+amappr2
+amappn1
+amappn2

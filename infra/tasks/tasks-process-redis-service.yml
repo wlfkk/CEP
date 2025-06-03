@@ -1,0 +1,75 @@
+- name: Initialize vault decryption status
+  set_fact:
+    decrypt_redis_vault_failed: false
+  when: test_redis | default(false) or run_redis | default(false)
+
+- name: Check vault for {{ service_name }}
+  block:
+    - name: Include vault vars
+      include_vars: "../vars/{{ profile }}/redis/vault/{{ service_name }}.yml"
+  rescue:
+    - set_fact:
+        decrypt_redis_vault_failed: true
+  when: test_redis | default(false) or run_redis | default(false)
+
+- name: Load service vars {{ service_name }}
+  include_vars:
+    file: "../vars/{{ profile }}/redis/{{ service_name }}.yml"
+  when:
+    - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+    - test_redis | default(false) or run_redis | default(false)
+
+- name: Ensure redis_group_name is set and not empty for {{ service_name }}
+  assert:
+    that:
+      - redis_group_name is defined
+      - redis_group_name != ""
+    fail_msg: "redis_group_name must be defined and not empty for {{ service_name }}"
+  when:
+    - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+    - run_redis | default(false)
+
+- name: Print {{redis_group_name}} for {{ service_name }}
+  debug:
+    msg: "redis_group_name for {{ service_name }} is {{ redis_group_name }}"
+  when:
+    - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+    - redis_group_name is defined
+    - redis_group_name == deploy_group_name
+    - run_redis | default(false)
+
+# Uncomment if you need to set run_tests to true by default
+# - name: Set run_tests to true
+#   set_fact:
+#     run_tests: true
+
+- name: Run redis role
+  import_role:
+    name: redis
+  when:
+    - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+    - redis_group_name is defined
+    - redis_group_name == deploy_group_name
+    - run_redis | default(false)
+
+- name: Run redis tests for service
+  block:
+    - name: Test redis service
+      import_role:
+        name: redis
+        tasks_from: redis-test
+      when:
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - test_redis | default(false)
+
+  rescue:
+    - name: Log failure and continue
+      debug:
+        msg: "Service {{ service_name }} failed the test."
+      when: test_redis | default(false)
+
+    - set_fact:
+        failed_services: "{{ failed_services + [service_name] }}"
+      when: test_redis | default(false)

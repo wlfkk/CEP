@@ -1,0 +1,8 @@
+---
+- hosts: keycloak
+  become: yes
+  ignore_errors: "{{ deploy_all_static | default(false) }}"
+  vars_files:
+    - "../vars/{{ profile }}/keycloak/vault/vars.yml"
+  roles:
+    - { role: keycloak }

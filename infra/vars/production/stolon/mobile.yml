@@ -1,0 +1,28 @@
+stolon_cluster_name     : stolon-cluster-mobile
+stolon_store_group_name : etcd-mobile
+
+stolon_ssl              : true
+
+stolon_pg_port          : 5436
+stolon_proxy_port       : 5437
+stolon_pg_su_password   : "{{ stolon_mobile_password }}"
+stolon_pg_repl_password : "{{ stolon_mobile_password }}"
+
+stolon_sentinel_metrics_port : 9190
+stolon_keeper_metrics_port   : 9191
+stolon_proxy_metrics_port    : 9192
+
+stolon_keeper_mem_lim_mb   : 4096
+stolon_sentinel_mem_lim_mb : 512
+stolon_proxy_mem_lim_mb    : 512
+
+stolon_shm_base_size: '1024MB'
+
+stolon_custom_params:
+  pgHBA: ['hostssl all all 0.0.0.0/0 md5']
+  synchronousReplication: true
+  sleepInterval: "15s"
+  usePgrewind: true
+stolon_pg_custom_params:
+  max_connections: "1000"
+  checkpoint_timeout: "30s"

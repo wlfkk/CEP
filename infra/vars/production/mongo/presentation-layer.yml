@@ -1,0 +1,48 @@
+mongod_port               : 27021
+mongodb_service_name      : presentation-layer-mongo
+mongo_reps_group_name     : mongo-reps-presentation-layer
+mongodb_cpu_shares        : 1024
+mongodb_cpus              : 30
+mongo_backup_image_version: 5.0.17 
+mongo_docker_image_name   : infra.binary.bank.ru/mongo-enterprise:5.0.17
+mongodb_memory_mb         : 98304
+mongodb_cache_size        : 49152
+mongo_replset             : presentation-layer-mongo
+mongo_exporter_host_port  : 9217
+mongodb_pids_limit        : 6500
+
+mongo_backup_hour           : 1
+mongo_backup_retention_count: 3 #Количество бекапов, которые будут оставаться на боевых тачках
+
+mongo_ssl                 : true # сертификат до 05.05.2024
+
+mongo_user_admin_login    : mongoUserAdmin
+mongo_user_admin_password : "{{ mongo_presentation-layer_user_admin_password }}"
+
+mongo_backup_user_name    : backupAndRestoreUser
+
+mongo_admin_list:
+  - mongo_username : root
+    mongo_password : "{{ mongo_presentation-layer_root_password }}"
+    mongo_role     : root
+  - mongo_username : opsManager # ops-manager: мониторинг состояния кластера
+    mongo_password : "{{ mongo_presentation-layer_opsmanager_password }}"
+    mongo_role     : clusterMonitor
+  - mongo_username : ibank # iBank: чтение нескольких таблиц из БД, скрипты над replicaSet
+    mongo_password : "{{ mongo_presentation-layer_ibank_password }}"
+    mongo_role     : readAnyDatabase,clusterManager
+  - mongo_username : "{{ mongo_backup_user_name }}" # для бэкапа через cron, также используем для восстановления бэкапов
+    mongo_password : "{{ mongo_backup_user_password }}"
+    mongo_role     : backup,restore
+  - mongo_username : mongoExporter
+    mongo_password : "{{ mongo_exporter_user_password }}" # для монго экспортера
+    mongo_role     : clusterMonitor
+
+mongo_user_list:
+  - mongo_username : user
+    mongo_password : "{{ mongo_presentation-layer_user_password }}"
+    mongo_role     : readWrite
+    mongo_db       : presentation-layer
+
+mongodb_service_disable_seccomp              : true
+mongodb_service_disable_transparent_hugepage : true

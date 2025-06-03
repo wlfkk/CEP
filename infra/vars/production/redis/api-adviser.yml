@@ -1,0 +1,7 @@
+redis_service_postfix     : api-adviser
+redis_container_memory_mb : 3708
+redis_cache_memory_mb     : 3096
+redis_port                : 6810
+redis_sentinel_port       : 6811
+redis_password            : "{{ redis_api_adviser_password }}"
+redis_group_name          : "amcache-3"

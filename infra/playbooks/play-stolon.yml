@@ -1,0 +1,26 @@
+- hosts: "stolon-{{ stolon_service_postfix }}"
+  become: yes
+  become_user: root
+  become_method: sudo
+  ignore_errors: "{{ deploy_all_static | default(false) }}"
+  tasks:
+    - name: Check vault
+      block:
+        - name: Include vars
+          include_vars: "{{ item }}"
+          with_items:
+            - "../vars/{{ profile }}/{{ profile }}.yml"
+            - "../vars/{{ profile }}/stolon/{{ stolon_service_postfix }}.yml"
+
+        - name: Include vault vars
+          include_vars: "../vars/{{ profile }}/stolon/vault/{{ stolon_service_postfix }}.yml"
+      rescue:
+        - set_fact:
+            decrypt_stolon_vault_failed: true
+      tags:
+        - always
+
+    - name: Execute role
+      import_role:
+        name: stolon
+      when: decrypt_stolon_vault_failed is not defined

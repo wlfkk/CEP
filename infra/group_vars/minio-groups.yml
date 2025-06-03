@@ -1,0 +1,5 @@
+# --------
+# Inframon
+# --------
+inframon_include_minio             : true
+

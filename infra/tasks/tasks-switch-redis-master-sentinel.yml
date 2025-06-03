@@ -1,0 +1,301 @@
+- block:
+    - name: Initialize vault decryption status
+      set_fact:
+        decrypt_redis_vault_failed: false
+      when: switch_master | default(false)
+
+    - name: Check vault for {{ service_name }}
+      block:
+        - name: Include vault vars
+          include_vars: "../vars/{{ profile }}/redis/vault/{{ service_name }}.yml"
+      rescue:
+        - set_fact:
+            decrypt_redis_vault_failed: true
+      when: switch_master | default(false)
+
+    - name: Load service vars {{ service_name }}
+      include_vars:
+        file: "../vars/{{ profile }}/redis/{{ service_name }}.yml"
+      when:
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - switch_master | default(false)
+
+    - name: Set redis service name
+      set_fact:
+        redis_service_name: "{{ redis_service_postfix.startswith('redis') | ternary('','redis-') }}{{ redis_service_postfix }}"
+      when:
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - switch_master | default(false)
+
+    - name: Check current master
+      run_once: true
+      command: >
+        docker exec {{ redis_service_name }}
+        redis-cli -p {{ redis_sentinel_port }} -a {{ redis_password }}
+        {% if redis_with_tls %}
+        --tls --cacert /opt/bitnami/redis/certs/ca-chain.pem
+        {% endif %}
+        SENTINEL master mymaster
+      register: sentinel_master_info
+      changed_when: false
+      when:
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - switch_master | default(false)
+
+    - name: Debug current master info
+      run_once: true
+      debug:
+        var: sentinel_master_info
+      when:
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - switch_master | default(false)
+
+    - name: Parse current master IP
+      run_once: true
+      set_fact:
+        current_master_ip: >-
+          {{
+            sentinel_master_info.stdout_lines[
+              (sentinel_master_info.stdout_lines.index('ip') + 1)
+            ]
+          }}
+      when:
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - sentinel_master_info.stdout_lines | select('search', '^ip$') | list | length > 0
+        - switch_master | default(false)
+
+    - name: Debug current master IP
+      run_once: true
+      debug:
+        var: current_master_ip
+      when: switch_master | default(false)
+
+    - name: Get current master IP address
+      run_once: true
+      set_fact:
+        possibly_current_master_ip: "{{ hostvars[possibly_current_master_host].ansible_default_ipv4.address }}"
+      when:
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - switch_master | default(false)
+
+    - name: Debug current master IP
+      run_once: true
+      debug:
+        var: possibly_current_master_ip
+      when:
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - switch_master | default(false)
+
+    - name: Determine current role of the specified possibly master host
+      run_once: true
+      command: >
+        docker exec {{ redis_service_name }} \
+                 redis-cli -h {{ possibly_current_master_ip }} -p {{ redis_port }} -a {{ redis_password }} \
+                 {% if redis_with_tls %}
+                 --tls \
+                 --cacert /opt/bitnami/redis/certs/ca-chain.pem \
+                 {% endif %}
+                 INFO replication
+      register: redis_replication_info
+      changed_when: false
+      when:
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - switch_master | default(false)
+
+    - name: Print Redis replication info
+      run_once: true
+      debug:
+        msg: "{{ redis_replication_info }}"
+      when:
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - switch_master | default(false)
+
+    - name: Extract role
+      run_once: true
+      set_fact:
+        possibly_current_master_role: "{{ redis_replication_info.stdout_lines | select('search', '^role:') | list | first | replace('role:', '') }}"
+      when:
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - switch_master | default(false)
+
+    - name: Debug current role of current master host
+      run_once: true
+      debug:
+        var: possibly_current_master_role
+      when:
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - switch_master | default(false)
+
+    - name: Check if the specified host is already the master
+      fail:
+        msg: "The new host can be already the master. Cannot failover you must find current master first"
+      when:
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - possibly_current_master_role != 'master'
+        - switch_master | default(false)
+
+    - name: Force failover to the new master
+      run_once: true
+      delegate_to: "{{ possibly_current_master_host }}"
+      command: >
+        docker exec {{ redis_service_name }}
+        redis-cli -p {{ redis_sentinel_port }} -a {{ redis_password }}
+        {% if redis_with_tls %}
+        --tls --cacert /opt/bitnami/redis/certs/ca-chain.pem
+        {% endif %}
+        SENTINEL failover mymaster
+      when:
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - current_master_ip == possibly_current_master_ip
+        - possibly_current_master_role == 'master'
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - switch_master | default(false)
+
+    - name: Wait for failover to complete
+      pause:
+        seconds: 5
+      when:
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - current_master_ip == possibly_current_master_ip
+        - possibly_current_master_role == 'master'
+        - switch_master | default(false)
+
+    - name: Confirm new master
+      command: >
+        docker exec {{ redis_service_name }}
+        redis-cli -p {{ redis_sentinel_port }} -a {{ redis_password }}
+        {% if redis_with_tls %}
+        --tls --cacert /opt/bitnami/redis/certs/ca-chain.pem
+        {% endif %}
+        SENTINEL master mymaster
+      register: new_sentinel_master_info
+      changed_when: false
+      when:
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - current_master_ip == possibly_current_master_ip
+        - possibly_current_master_role == 'master'
+        - switch_master | default(false)
+
+    - name: Debug new master info
+      debug:
+        var: new_sentinel_master_info
+      when:
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - switch_master | default(false)
+
+    - name: Parse new master details
+      set_fact:
+        confirmed_new_master_ip: >-
+          {{
+            new_sentinel_master_info.stdout_lines[
+              (new_sentinel_master_info.stdout_lines.index('ip') + 1)
+            ]
+          }}
+      when:
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - current_master_ip == possibly_current_master_ip
+        - possibly_current_master_role == 'master'
+        - switch_master | default(false)
+
+    - name: Debug confirmed_new_master_ip
+      debug:
+        var: confirmed_new_master_ip
+      when:
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - current_master_ip == possibly_current_master_ip
+        - possibly_current_master_role == 'master'
+        - switch_master | default(false)
+
+    - name: Check if the failover was failed
+      fail:
+        msg: "Failover to the specified new master did not occur as expected."
+      when:
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - confirmed_new_master_ip == current_master_ip
+        - switch_master | default(false)
+
+    - name: Update Redis replicas to point to new master
+      command: >
+        docker exec {{ redis_service_name }}
+        redis-cli -h {{ item }} -p {{ redis_port }} -a {{ redis_password }}
+        {% if redis_with_tls %}
+        --tls --cacert /opt/bitnami/redis/certs/ca-chain.pem
+        {% endif %}
+        SLAVEOF {{ confirmed_new_master_ip }} {{ redis_port }}
+      with_items: "{{ groups[redis_group_name] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | list }}"
+      when:
+        - redis_group_name is defined
+        - redis_group_name == deploy_group_name
+        - decrypt_redis_vault_failed is not defined or not decrypt_redis_vault_failed
+        - item != confirmed_new_master_ip
+        - current_master_ip == possibly_current_master_ip
+        - possibly_current_master_role == 'master'
+        - switch_master | default(false)
+
+  rescue:
+    - name: Log failure and continue
+      run_once: true
+      debug:
+        msg: "Service {{ service_name }} failed to switch master."
+      when: switch_master | default(false)
+
+    - set_fact:
+        failed_services: "{{ failed_services + [service_name] }}"
+      run_once: true
+      when: switch_master | default(false)
+
+  always:
+    - name: Set service status
+      run_once: true
+      set_fact:
+        service_status: "{{ 'failed' if service_name in failed_services else 'successful' }}"
+      when: switch_master | default(false)
+
+    - name: Add successful service switches
+      run_once: true
+      set_fact:
+        successful_services: "{{ successful_services + [service_name] }}"
+      when:
+        - switch_master | default(false)
+        - service_status == 'successful'
+
+    - name: Log service status
+      run_once: true
+      debug:
+        msg: "Service {{ service_name }} status: {{ service_status }}"
+      when: switch_master | default(false)

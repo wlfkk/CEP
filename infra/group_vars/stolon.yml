@@ -1,0 +1,35 @@
+---
+###==========================================
+###  Vars for hosts in group [stolon]
+###==========================================
+stolon_group_name       : "stolon-{{ stolon_service_postfix }}"
+stolon_pg_su_username   : postgres
+stolon_pg_repl_username : postgres
+stolon_systemd          : true
+stolon_user             : 1000
+
+# config params to customize
+stolon_custom_params    : { }
+stolon_pg_custom_params : { }
+
+# metrics
+stolon_metrics_enabled: true
+
+# docker
+stolon_keeper_container_name: "{{ stolon_cluster_name }}-keeper"
+stolon_proxy_container_name: "{{ stolon_cluster_name }}-proxy"
+stolon_sentinel_container_name: "{{ stolon_cluster_name }}-sentinel"
+
+# DO NOT CHANGE: stolon default params, override in `stolon_custom_params` if needed
+stolon_default_params:
+  automaticPgRestart: true
+  synchronousReplication: true
+  minSynchronousStandbys: 1
+stolon_params: "{{ stolon_default_params | combine(stolon_custom_params) }}"
+
+# DO NOT CHANGE: pg default params, override in `stolon_pg_custom_params` if needed
+stolon_pg_default_params:
+  max_parallel_workers_per_gather: "4"
+  work_mem: "8MB"
+  default_text_search_config: 'pg_catalog.english'
+stolon_pg_params: "{{ stolon_pg_default_params | combine(stolon_pg_custom_params) }}"

@@ -1,0 +1,6 @@
+---
+###==========================================
+###  Vars for hosts in group [etcd]
+###==========================================
+etcd_systemd     : true
+etcd_group_name  : "etcd-{{ etcd_service_postfix }}"

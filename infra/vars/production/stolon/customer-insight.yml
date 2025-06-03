@@ -1,0 +1,31 @@
+stolon_cluster_name     : stolon-cluster-customer-insight
+stolon_store_group_name : etcd-customer-insight
+
+stolon_ssl              : false
+
+stolon_pg_port          : 5438
+stolon_proxy_port       : 5439
+stolon_pg_su_password   : "{{ stolon_customer_insight_password }}"
+stolon_pg_repl_password : "{{ stolon_customer_insight_password }}"
+
+stolon_sentinel_metrics_port : 9193
+stolon_keeper_metrics_port   : 9194
+stolon_proxy_metrics_port    : 9195
+
+stolon_keeper_mem_lim_mb   : 4096
+stolon_sentinel_mem_lim_mb : 512
+stolon_proxy_mem_lim_mb    : 512
+
+stolon_shm_base_size: '256MB'
+stolon_keeper_cpu_lim: 4
+
+stolon_pg_custom_params:
+  max_locks_per_transaction: 1024
+
+# standby vars: remove after promotion
+stolon_standby_pg_host  : "{{ groups['postgres-customer-insight'][0] }}"
+stolon_standby_pg_port  : 5432
+
+postgres_db_users:
+  - user: etl_user
+    password: "{{ etl_user_password }}"

@@ -1,0 +1,21 @@
+
+- hosts: "etcd-{{ etcd_service_postfix }}"
+  become: yes
+  become_user: root
+  become_method: sudo
+  ignore_errors: "{{ deploy_all_static | default(false) }}"
+  tasks:
+    - name: Include vars
+      include_vars: "../vars/{{ profile }}/etcd/{{ etcd_service_postfix }}.yml"
+      tags:
+        - always
+
+    - name: execute etcd role
+      import_role:
+        name: etcd
+      when: etcd_use_latest_version_role is undefined
+
+    - name: execute latest etcd role
+      import_role:
+        name: etcd-latest
+      when: etcd_use_latest_version_role is defined

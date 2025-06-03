@@ -1,0 +1,4 @@
+etcd_container_cpu       : 1
+etcd_container_memory_mb : 256
+
+etcd_metrics_port        : 9179

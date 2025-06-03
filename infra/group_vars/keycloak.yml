@@ -1,0 +1,17 @@
+keycloak_db_vendor: postgres
+keycloak_db_address: "{{ groups['stolon-mobile'] | map('map_format', '%s:5437') | list | join(',') }}"
+keycloak_port: "8888"
+keycloak_nginx_publish: true
+keycloak_management_port: "8889"
+keycloak_db_user_password: "{{ keycloak_playbook_db_usr_password }}"
+keycloak_admin_password: "{{ keycloak_playbook_admin_password }}"
+keycloak_docker_image_version: "19.0.3-legacy"
+keycloak_docker_image_name: "infra.binary.bank.ru/osikorb-docker-releases/keycloak"
+keycloak_docker_image: "{{ keycloak_docker_image_name }}:{{ keycloak_docker_image_version }}"
+keycloak_frontend_path: "https://{{nginx_server_name_mobile_intra}}/{{ keycloak_service_name }}/auth/"
+keycloak_jdbc_params: "ssl=true&sslmove=verify-ca&sslrootcert={{ keycloak_secrets_dir }}/chain.pem"
+keycloak_prometheus_enabled: true
+keycloak_reverse_proxy: true
+keycloak_cerificate_chain: "{{ stolon_ssl_server_ca }}"
+keycloak_java_opts: "-Xms{{ keycloak_jvm_mem }} -Xmx{{ keycloak_jvm_mem }} -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true"
+keycloak_loglevel: "DEBUG"

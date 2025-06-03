@@ -1,0 +1,37 @@
+#
+## Внешние роли, которые используются в данном проекте
+## Устанавливать так: ansible-galaxy install -f -r requirements.yml
+##
+#
+- src: git+ssh://git/dops/ansible-filters.git
+  version: 1.0.0
+  name: .filters
+
+- src: git+ssh://git/dops/ansible-plugins.git
+  version: 1.0.11
+  name: .plugins
+
+- src: git+ssh://git@git/dops/ansible-mongo.git
+  version: 2.2.19
+  name: mongo
+
+- src: git+ssh://git@git/dops/ansible-minio.git
+  version: 1.2.4
+  name: minio
+
+- src: git+ssh://git@git/dops/ansible-keycloak.git
+  version: 1.1.2
+  name: keycloak
+
+- src: git+ssh://git@git/dops/ansible-redis.git
+  version: 2.0.1
+  name: redis
+
+- src: git+ssh://git@git/dops/ansible-etcd.git
+  version: 1.2.2
+  name: etcd
+
+- src: git+ssh://git@git/dops/ansible-stolon.git
+  version: 1.4.7
+  name: stolon
+

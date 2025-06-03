@@ -1,0 +1,18 @@
+# ansible-playbook --ask-vault-pass -i inv-production --diff playbooks/play-minio.yml --extra-vars "minio_service_name=minio" --check -v
+
+minio_memory_mb: 1536
+minio_docker_image_name: "infra.binary.bank.ru/minio:RELEASE.2020-02-27T00-23-05Z"
+minio_client_docker_image: "infra.binary.bank.ru/mc:RELEASE.2020-02-25T18-10-03Z"
+
+flush_all: false
+minio_install: true
+nginx_config: true
+nginx_service_name: nginx-cache
+prepare: true
+tls_enable: false
+
+# Внимание, datadirs общие с minio-tls!
+minio_server_datadirs: ["/data/minio/disk1","/data/minio/disk2"]
+
+minio_server_list: "{{ groups['minio'] }}"
+minio_server_port: 9010

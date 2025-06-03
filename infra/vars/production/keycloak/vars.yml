@@ -1,0 +1,2 @@
+keycloak_jvm_mem: "6144m"
+keycloak_docker_memory_limit: "8192m"

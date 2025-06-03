@@ -1,0 +1,8 @@
+redis_data_secure_dir       : "/data/redis/certs"
+
+redis_group_name            : redis
+
+redis_with_tls              : true
+redis_tls_host_key_file     : "../files/{{ redis_group_name }}/{{ profile }}/certs/redis_key"
+redis_tls_host_cert_file    : "../files/{{ redis_group_name }}/{{ profile }}/certs/redis_cert"
+redis_tls_host_ca_cert_file : "../files/{{ redis_group_name }}/{{ profile }}/certs/redis_ca"

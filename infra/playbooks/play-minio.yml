@@ -1,0 +1,9 @@
+---
+
+- hosts: "{{ minio_service_name }}"
+  ignore_errors: "{{ deploy_all_static | default(false) }}"
+  vars_files:
+   - "../vars/{{ profile }}/minio/{{ minio_service_name }}.yml"
+   - "../vars/{{ profile }}/minio/vault/{{ minio_service_name }}-credentials.yml"
+  roles:
+    - role: minio

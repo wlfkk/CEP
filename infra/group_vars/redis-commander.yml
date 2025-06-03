@@ -1,0 +1,6 @@
+---
+###==========================================
+###  Vars for hosts in group [redis-commander]
+###==========================================
+
+redis_tls_host_ca_cert_file : "../files/redis/{{ profile }}/certs/redis_ca"
